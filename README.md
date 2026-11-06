@@ -38,11 +38,11 @@
 - **Python:** 3.10 trở lên
 - **Tesseract OCR** (kèm gói ngôn ngữ `vie` nếu xử lý hồ sơ scan ảnh)
 
-### 2. Cài đặt mã nguồn
+### 2. Cài đặt mã nguồn ( CMD )
 ```bash
 git clone [https://github.com/TonygamingTL/GCN-ME.git](https://github.com/TonygamingTL/GCN-ME.git)
 cd GCN-ME
-pip install -r requirements.txt
+py -m pip install -r requirements.txt
 ```
 
 Các thư viện chính trong `requirements.txt`:
