@@ -44,7 +44,10 @@ git clone [https://github.com/TonygamingTL/GCN-ME.git](https://github.com/Tonyga
 cd GCN-ME
 py -m pip install -r requirements.txt
 ```
-
+Hoặc chỉ cần cài 1 lần duy nhất
+```bash
+py -m pip install pymupdf pdfplumber openpyxl pytesseract Pillow gdown
+```
 Các thư viện chính trong `requirements.txt`:
 ```txt
 pymupdf>=1.23.0
