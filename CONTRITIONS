@@ -1,0 +1,2 @@
+USE TO cmd TO GET .EXE
+py -m PyInstaller --noconsole --onefile --clean --name "GCN_ME" --hidden-import=downloads --hidden-import=updates --add-data "downloads.py;." --add-data "updates.py;." GCN_Extractor.py
