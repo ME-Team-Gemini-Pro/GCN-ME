@@ -129,14 +129,63 @@ class GCNParser:
                 if tesseract_cmd and os.path.exists(tesseract_cmd):
                     pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
+                # Tự động tìm gói ngôn ngữ vie.traineddata hoặc tự tải về nếu chưa có để tránh lỗi (1, 'Error opening data file...')
+                tess_dirs = []
+                if getattr(sys, "frozen", False):
+                    tess_dirs.append(os.path.join(os.path.dirname(sys.executable), "tessdata"))
+                    if hasattr(sys, "_MEIPASS"):
+                        tess_dirs.append(os.path.join(sys._MEIPASS, "tessdata"))
+                cur_dir = os.path.dirname(os.path.abspath(__file__))
+                root_dir = os.path.dirname(cur_dir) if os.path.basename(cur_dir).lower() == "src" else cur_dir
+                tess_dirs.extend([os.path.join(root_dir, "tessdata"), os.path.join(cur_dir, "tessdata")])
+                if tesseract_cmd and os.path.isfile(tesseract_cmd):
+                    tess_dirs.append(os.path.join(os.path.dirname(tesseract_cmd), "tessdata"))
+
+                active_tessdata = None
+                for td in tess_dirs:
+                    if os.path.isfile(os.path.join(td, "vie.traineddata")) and os.path.getsize(os.path.join(td, "vie.traineddata")) > 100_000:
+                        active_tessdata = td
+                        break
+
+                # Nếu chưa tìm thấy vie.traineddata ở bất kỳ đâu, tự động tải trực tiếp về thư mục tessdata cục bộ
+                if not active_tessdata:
+                    fallback_td = tess_dirs[0]
+                    os.makedirs(fallback_td, exist_ok=True)
+                    try:
+                        import urllib.request, ssl
+                        ctx = ssl.create_default_context()
+                        ctx.check_hostname = False
+                        ctx.verify_mode = ssl.CERT_NONE
+                        for lang_code in ("vie", "eng"):
+                            target_f = os.path.join(fallback_td, f"{lang_code}.traineddata")
+                            if not os.path.isfile(target_f):
+                                url = f"https://github.com/tesseract-ocr/tessdata_fast/raw/main/{lang_code}.traineddata"
+                                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 GCN-ME"})
+                                with urllib.request.urlopen(req, context=ctx, timeout=45) as resp, open(target_f, "wb") as out:
+                                    shutil.copyfileobj(resp, out)
+                        if os.path.isfile(os.path.join(fallback_td, "vie.traineddata")):
+                            active_tessdata = fallback_td
+                    except Exception:
+                        pass
+
+                tess_cfg = ""
+                if active_tessdata:
+                    os.environ["TESSDATA_PREFIX"] = active_tessdata
+                    norm_td = active_tessdata.replace("\\", "/")
+                    tess_cfg = f'--tessdata-dir "{norm_td}"'
+
                 ocr_pages = []
                 for page in doc:
                     pix = page.get_pixmap(dpi=250)
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
+                    page_ocr = ""
                     try:
-                        page_ocr = pytesseract.image_to_string(img, lang="vie")
+                        page_ocr = pytesseract.image_to_string(img, lang="vie", config=tess_cfg)
                     except Exception:
-                        page_ocr = pytesseract.image_to_string(img)
+                        try:
+                            page_ocr = pytesseract.image_to_string(img, lang="eng", config=tess_cfg)
+                        except Exception:
+                            page_ocr = ""
                     ocr_pages.append(page_ocr)
                 text_content = "\n".join(ocr_pages).strip()
                 method_used = "OCR (Bản Scan)"
