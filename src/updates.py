@@ -1,3 +1,6 @@
+
+updates.py
+100%
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -268,3 +271,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = SmartUpdaterGUI(root)
     root.mainloop()
+Đang hiển thị updates.py.
